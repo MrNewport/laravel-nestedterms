@@ -1,0 +1,53 @@
+{
+    "name": "mrnewport/laravel-nestedterms",
+    "description": "A super dynamic & extensible Terms + Tags system for Laravel, featuring infinite nesting, dynamic casting, hierarchical slugs, etc.",
+    "keywords": ["laravel", "terms", "tags", "taxonomy", "nested", "slug", "casting"],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "MrNewport",
+            "email": "admin@matthewnewport.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "laravel/framework": ">=9.0"
+
+    },
+    "autoload": {
+        "psr-4": {
+            "MrNewport\\LaravelNestedTerms\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MrNewport\\LaravelNestedTerms\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MrNewport\\LaravelNestedTerms\\Providers\\NestedTermsServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "test-coverage": "pest --coverage",
+        "lint": "php-cs-fixer fix --dry-run --diff"
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.7",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.5",
+        "friendsofphp/php-cs-fixer": "^3.66",
+        "orchestra/testbench": "^9.9"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
