@@ -1,3 +1,20 @@
+# Laravel Nestedterms
+
+Current release: **2.0.0**. Supported installations: Laravel 12 (PHP 8.2+) and Laravel 13 (PHP 8.3+). CI verifies supported PHP/Laravel combinations. Earlier Laravel versions should remain on the previous major release.
+
+Laravel 12/13 with bounded component dependencies. Fixed structured values being double-encoded, configurable table membership lookups and custom model relations. Parent traversal now rejects cycles and cross-term parents. Modernized the case-sensitive Pest bootstrap and added regression tests.
+
+```sh
+composer require mrnewport/laravel-nestedterms:^2.0
+composer test # from the package checkout; tests use isolated fixtures
+```
+
+GitHub source and tags are published first. Until the release is indexed on Packagist, add this repository as a Composer VCS repository. Never install test dependencies in your production application's require section.
+
+Run `php artisan migrate` after upgrading to apply package migrations. Back up application data before normal production migrations.
+
+## Existing API reference
+
 # Laravel Nested Terms & Tags
 
 A **dynamic & extensible** system for **nested** Terms and **dynamic-cast** Tags in Laravel. This package includes:

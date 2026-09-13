@@ -61,3 +61,23 @@ it('casts value based on type', function () {
     expect($tag->value)->toBe(10);
 });
 
+
+it('rejects cycles and cross term parents', function () {
+    $term = Term::create(['name' => 'Trees']);
+    $root = Tag::create(['term_id' => $term->id, 'name' => 'Root']);
+    $child = Tag::create(['term_id' => $term->id, 'name' => 'Child', 'parent_id' => $root->id]);
+    expect(fn () => $root->update(['parent_id' => $child->id]))->toThrow(InvalidArgumentException::class);
+    expect($root->fresh()->parent_id)->toBeNull();
+    $other = Term::create(['name' => 'Other']);
+    expect(fn () => Tag::create(['term_id' => $other->id, 'name' => 'Invalid', 'parent_id' => $child->id]))->toThrow(InvalidArgumentException::class);
+});
+
+it('round trips structured and scalar values', function ($type, $value) {
+    $term = Term::create(['name' => 'Values']);
+    $tag = Tag::create(['term_id' => $term->id, 'name' => 'Example', 'type' => $type, 'value' => $value]);
+    expect($tag->fresh()->value)->toBe($value);
+    $tag->update(['name' => 'Renamed']);
+    expect($tag->fresh()->value)->toBe($value);
+})->with([
+    ['array', ['size' => 3]], ['boolean', false], ['integer', 12], ['string', 'text'],
+]);

@@ -103,7 +103,7 @@ class Term extends Model
     {
         // If using a custom Tag model, the Tag itself references the config for belongsTo.
         // By default, we reference the base Tag class below, but you can override if needed.
-        return $this->hasMany(Tag::class, 'term_id');
+        return $this->hasMany(config('nestedterms.tag_model', Tag::class), 'term_id');
     }
 
     /**

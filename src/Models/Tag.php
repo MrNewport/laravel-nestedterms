@@ -97,7 +97,7 @@ class Tag extends Model
             $tag->type  = static::validateOrFallbackType($tag->type);
             $tag->slug  = $tag->generateHierarchySlug();
             $tag->slug  = static::makeSlugUnique($tag);
-            $tag->value = static::prepareValue($tag->value, $tag->type);
+            $tag->attributes['value'] = static::prepareValue($tag->value, $tag->type);
         });
 
         static::updating(function (Tag $tag): void {
@@ -105,7 +105,7 @@ class Tag extends Model
                 $tag->type  = static::validateOrFallbackType($tag->type);
                 $tag->slug  = $tag->generateHierarchySlug();
                 $tag->slug  = static::makeSlugUnique($tag, $tag->id);
-                $tag->value = static::prepareValue($tag->value, $tag->type);
+                $tag->attributes['value'] = static::prepareValue($tag->value, $tag->type);
             }
         });
     }
@@ -134,7 +134,7 @@ class Tag extends Model
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(static::class, 'parent_id');
     }
 
     /**
@@ -144,7 +144,7 @@ class Tag extends Model
      */
     public function children(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id');
+        return $this->hasMany(static::class, 'parent_id');
     }
 
     /**
@@ -195,17 +195,26 @@ class Tag extends Model
     {
         $segments = [];
         $node = $this;
+        $seen = [];
 
         while ($node) {
+            $identity = $node->getKey() ?? 'unsaved';
+            if (isset($seen[$identity])) {
+                throw new \InvalidArgumentException('A tag cannot be its own ancestor.');
+            }
+            $seen[$identity] = true;
+            if ((string) $node->term_id !== (string) $this->term_id) {
+                throw new \InvalidArgumentException('Parent tags must belong to the same term.');
+            }
             $segments[] = Str::slug($node->name);
-            $node = $node->parent;
+            $node = $node->parent_id === null ? null : $node->parent()->firstOrFail();
         }
         // We built from child up, so reverse it
         $segments = array_reverse($segments);
 
         // Prepend the Term's slug if available
-        if ($this->term && $this->term->slug) {
-            array_unshift($segments, $this->term->slug);
+        if (($term = $this->term()->first()) && $term->slug) {
+            array_unshift($segments, $term->slug);
         }
 
         return implode('.', $segments);

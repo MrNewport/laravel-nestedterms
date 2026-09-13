@@ -95,15 +95,15 @@ trait HasTags
     public function hasTag(mixed $tag): bool
     {
         if ($tag instanceof Tag) {
-            return $this->tags()->where('tags.id', $tag->id)->exists();
+            return $this->tags()->where($this->tags()->getRelated()->qualifyColumn('id'), $tag->id)->exists();
         }
 
         if (is_int($tag)) {
-            return $this->tags()->where('tags.id', $tag)->exists();
+            return $this->tags()->where($this->tags()->getRelated()->qualifyColumn('id'), $tag)->exists();
         }
 
         // Otherwise treat as slug
-        return $this->tags()->where('tags.slug', $tag)->exists();
+        return $this->tags()->where($this->tags()->getRelated()->qualifyColumn('slug'), $tag)->exists();
     }
 
     /**

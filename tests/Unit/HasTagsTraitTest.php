@@ -47,3 +47,15 @@ it('can filter tags by term slug', function () {
     expect($termOneTags)->toHaveCount(1)
         ->and($termOneTags->first()->name)->toBe('Apple');
 });
+
+it('honors the configured tag table for all membership lookups', function () {
+    Schema::rename('tags', 'custom_tags');
+    config(['nestedterms.tags_table' => 'custom_tags']);
+    $term = Term::create(['name' => 'Custom']);
+    $tag = Tag::create(['term_id' => $term->id, 'name' => 'One']);
+    $item = TestModel::create(['name' => 'Example']);
+    $item->attachTags($tag);
+    expect($item->hasTag($tag))->toBeTrue()
+        ->and($item->hasTag($tag->id))->toBeTrue()
+        ->and($item->hasTag($tag->slug))->toBeTrue();
+});
