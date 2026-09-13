@@ -1,6 +1,22 @@
 <?php
 
+use MrNewport\LaravelNestedTerms\Models\Tag;
+use MrNewport\LaravelNestedTerms\Models\Term;
+
 return [
+
+    // Disable before provider boot when the application owns its schema.
+    'load_migrations' => true,
+
+    // Stable slugs are opaque identities; hierarchical slugs are stored snapshots.
+    'slug_mode' => 'hierarchical',
+    'max_slug_length' => 255,
+
+    'limits' => [
+        'max_depth' => 256, // Number of ancestors; roots have depth zero.
+        'max_descendants' => 5000, // Excludes the traversal root.
+        'max_attachment_inputs' => 1000,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -10,8 +26,8 @@ return [
     | The database tables used by this package. You can override them here.
     |
     */
-    'terms_table'     => 'terms',
-    'tags_table'      => 'tags',
+    'terms_table' => 'terms',
+    'tags_table' => 'tags',
     'model_tag_table' => 'model_tag',
 
     /*
@@ -23,8 +39,8 @@ return [
     | If you wish to extend them, specify your custom classes here.
     |
     */
-    'term_model' => \MrNewport\LaravelNestedTerms\Models\Term::class,
-    'tag_model'  => \MrNewport\LaravelNestedTerms\Models\Tag::class,
+    'term_model' => Term::class,
+    'tag_model' => Tag::class,
 
     /*
     |--------------------------------------------------------------------------
