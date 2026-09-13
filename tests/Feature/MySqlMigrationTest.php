@@ -1,13 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\{Artisan, DB, Schema};
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 it('migrates and rolls back on MySQL', function () {
-    if (getenv('MYSQL_TEST_DATABASE') !== 'package_test') $this->markTestSkipped('Disposable MySQL runner only.');
+    if (getenv('MYSQL_TEST_DATABASE') !== 'package_test') {
+        $this->markTestSkipped('Disposable MySQL runner only.');
+    }
     $originalConnection = config('database.default');
     config(['database.default' => 'mysql', 'database.connections.mysql' => [
-        'driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3306,
+        'driver' => 'mysql', 'host' => '127.0.0.1', 'port' => (int) (getenv('MYSQL_TEST_PORT') ?: 3306),
         'database' => 'package_test', 'username' => 'root', 'password' => getenv('MYSQL_TEST_PASSWORD'),
         'charset' => 'utf8mb4', 'collation' => 'utf8mb4_unicode_ci', 'prefix' => '', 'strict' => true,
     ]]);

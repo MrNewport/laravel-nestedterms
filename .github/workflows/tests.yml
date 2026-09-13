@@ -44,16 +44,20 @@ jobs:
           coverage: none
       - run: composer create-project laravel/laravel:^13.0 host --no-install --no-scripts --no-interaction
       - working-directory: host
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ${{ github.workspace }}/host/database/nestedterms_consumer_test.sqlite
         run: |
           php -r '$p=json_decode(file_get_contents("composer.json"),true); unset($p["require-dev"]); $p["repositories"]=[["type"=>"path","url"=>"../package","options"=>["symlink"=>false,"versions"=>["mrnewport/laravel-nestedterms"=>"2.0.0"]]]]; $p["require"]["mrnewport/laravel-nestedterms"]="^2.0"; file_put_contents("composer.json",json_encode($p,JSON_PRETTY_PRINT));'
           cp .env.example .env
-          touch database/database.sqlite
+          touch database/nestedterms_consumer_test.sqlite
           composer update --no-dev --no-interaction --prefer-dist --no-progress
           php artisan key:generate
           php artisan package:discover
           php artisan config:cache
           php artisan route:cache
           php artisan migrate --force
+          php ../package/tests/Fixtures/decimal-consumer.php
           php artisan migrate:rollback --force
           php -r 'require "vendor/autoload.php"; if(class_exists("Pest\\TestSuite") || class_exists("PHPUnit\\Framework\\TestCase")) exit(1);'
   mysql:
@@ -77,7 +81,9 @@ jobs:
           extensions: pdo_mysql, pdo_sqlite, dom, mbstring
           coverage: none
       - run: composer update --no-interaction --prefer-dist --no-progress
-      - run: vendor/bin/pest --filter='migrates and rolls back on MySQL'
+      - run: vendor/bin/pest tests/Feature/MySqlMigrationTest.php tests/Feature/MySqlHardeningTest.php
         env:
           MYSQL_TEST_DATABASE: package_test
+          MYSQL_HARDENING_DATABASE: nestedterms_hardening_ci_test
+          MYSQL_TEST_PORT: '3306'
           MYSQL_TEST_PASSWORD: package-test-only
