@@ -60,6 +60,13 @@ return [
         'array',
         'json',
         'object',
+        'decimal:0',
+        'decimal:1',
+        'decimal:2',
+        'decimal:3',
+        'decimal:4',
+        'decimal:5',
+        'decimal:6',
     ],
 
     /*

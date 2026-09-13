@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add reusable `ExactDecimal::normalize()` and opt-in configured `decimal:0` through `decimal:6` Tag types. Exact decimals retain their declared type and round-trip as canonical strings, with bounded input/precision, no float coercion or rounding, null preservation, and exact rescaling/type changes.
 - Allow applications to disable package migration loading and supply their own constrained schema.
 - Resolve all attachment inputs through the configured scoped Tag model, rejecting unavailable or ambiguous inputs before any pivot changes. Attachment helpers now use a single database transaction and explicit input limits; only an explicit empty list clears every attachment.
 - Replace recursive descendant traversal with bounded breadth-first traversal. Add bounded ancestry, cycle detection, and subtree depth checks when reparenting. Hierarchy and scoped Term checks run independently of slug rendering.

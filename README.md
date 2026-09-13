@@ -13,7 +13,7 @@ GitHub source and tags are published first. Until the release is indexed on Pack
 
 Run `php artisan migrate` after upgrading to apply package migrations. Back up application data before normal production migrations.
 
-The unreleased changes in this checkout add scoped atomic attachments, migration opt-out, bounded traversal, and an optional stable slug mode. They are not part of the published 2.0.0 release yet.
+The unreleased changes in this checkout add scoped atomic attachments, migration opt-out, bounded traversal, an optional stable slug mode, and exact fixed-scale decimals. They are not part of the published 2.0.0 release yet.
 
 ## Existing API reference
 
@@ -103,6 +103,7 @@ return [
 
     'allowed_cast_types' => [
         'integer','float','double','boolean','string','array','json','object',
+        'decimal:0','decimal:1','decimal:2','decimal:3','decimal:4','decimal:5','decimal:6',
     ],
 
     'custom_type_map' => [
@@ -203,6 +204,32 @@ echo $tag->value;       // 5
 ```
 
 Typed `null` remains SQL `NULL` on creation and updates. It is distinct from integer zero, boolean false, and an empty string. Existing cast fallback/coercion remains supported; domain ranges and allowed values belong to the application's validation. Floating-point casts do not provide exact decimal arithmetic.
+
+#### Exact decimals
+
+Use a declared fixed scale when the entered number must remain exact:
+
+```php
+use MrNewport\LaravelNestedTerms\Support\ExactDecimal;
+
+ExactDecimal::normalize('81.5', 2); // '81.50'
+ExactDecimal::normalize('-0.000', 2); // '0.00'
+ExactDecimal::normalize('1.500', 2); // '1.50': removing zeros is exact
+
+$area = Tag::create([
+    'term_id' => $term->id,
+    'name' => 'Area',
+    'type' => 'decimal:2',
+    'value' => '999999999999999999.25',
+]);
+$area->fresh()->value; // exact string, also in arrays and JSON
+```
+
+`ExactDecimal::normalize(mixed $value, int $scale): string` accepts only strings or integers and scales 0–6. It rejects floats, booleans, null, whitespace, plus signs, leading integer zeros, exponents, separators, incomplete decimal notation, and any nonzero fractional digits that would have to be discarded. All validation failures throw `InvalidArgumentException`. It uses bounded string operations without rounding or a math-extension dependency. Input is limited to 128 bytes and the canonical coefficient (the decimal point removed, excluding leading zeros) to 100 digits. Applications should enforce their own narrower bounds and measurement units.
+
+Tag values handle null separately and preserve SQL `NULL`. A decimal type must be listed in `allowed_cast_types`; all seven are included in the default config. Add the desired types to previously published configs. Malformed or disabled `decimal:*` types throw instead of falling back to string. Synonyms mapped to decimals must also target an enabled decimal type. The persisted `type` remains `decimal:<scale>`; values are exact strings, never Laravel's rounding decimal cast or a float.
+
+Creation, value-only updates, and reads all enforce exactness. Changing a decimal scale succeeds only if the value is exactly representable, unless an explicit replacement value is supplied. Decimal-to-integer changes reject fractional values and PHP integer overflow. Changing an existing float tag to decimal validates its already stored string; it cannot recover precision previously lost under the float type. Choosing `float` or `double` again explicitly returns to their existing approximate semantics.
 
 ### Attaching Tags to Models
 

@@ -89,6 +89,20 @@ it('hardens scoped attachments and typed values on disposable MySQL', function (
                 ->and(DB::table('catalog_tags')->where('id', $tag->id)->value('value'))->toBeNull();
             expect(ScopedTag::create(['term_id' => $term->id, 'name' => $type.' initial zero', 'type' => $type, 'value' => $value])->fresh()->value)->toBe($value);
         }
+        $decimal = ScopedTag::create(['term_id' => $term->id, 'name' => 'Exact decimal', 'type' => 'decimal:2', 'value' => '999999999999999999.25']);
+        expect($decimal->fresh()->type)->toBe('decimal:2')
+            ->and($decimal->fresh()->value)->toBe('999999999999999999.25')
+            ->and(DB::table('catalog_tags')->where('id', $decimal->id)->value('value'))->toBe('999999999999999999.25');
+        expect(fn () => $decimal->update(['value' => '1.251']))->toThrow(InvalidArgumentException::class);
+        expect($decimal->fresh()->value)->toBe('999999999999999999.25');
+        $decimal->update(['value' => '1.50', 'type' => 'decimal:1']);
+        expect($decimal->fresh()->value)->toBe('1.5')
+            ->and(DB::table('catalog_tags')->where('id', $decimal->id)->value('value'))->toBe('1.5');
+        $decimal->update(['value' => '-0.00']);
+        expect($decimal->fresh()->value)->toBe('0.0');
+        $decimal->update(['value' => null]);
+        expect($decimal->fresh()->value)->toBeNull()
+            ->and(DB::table('catalog_tags')->where('id', $decimal->id)->value('value'))->toBeNull();
     } finally {
         Relation::morphMap([], false);
         Relation::requireMorphMap(false);

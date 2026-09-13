@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use MrNewport\LaravelNestedTerms\Support\ExactDecimal;
 
 /**
  * Class Tag
@@ -92,6 +93,21 @@ class Tag extends Model
      */
     protected static function booted(): void
     {
+        static::saving(function (Tag $tag): void {
+            $type = static::validateOrFallbackType($tag->type);
+            $scale = static::decimalScale($type);
+            $raw = $tag->attributes['value'] ?? null;
+            if ($scale !== null) {
+                $tag->attributes['value'] = $raw === null ? null : ExactDecimal::normalize($raw, $scale);
+            } elseif ($type === 'integer' && static::decimalScale($tag->getRawOriginal('type')) !== null && $raw !== null) {
+                $integer = ExactDecimal::normalize($raw, 0);
+                if (filter_var($integer, FILTER_VALIDATE_INT) === false) {
+                    throw new \InvalidArgumentException('The decimal value cannot be represented as a PHP integer.');
+                }
+                $tag->attributes['value'] = $integer;
+            }
+        });
+
         static::creating(function (Tag $tag): void {
             $tag->validateHierarchy();
             $tag->type = static::validateOrFallbackType($tag->type);
@@ -322,6 +338,10 @@ class Tag extends Model
         $allowed = config('nestedterms.allowed_cast_types', []);
         $map = config('nestedterms.custom_type_map', []);
 
+        if (static::decimalScale($type) !== null && ! in_array($type, $allowed, true)) {
+            throw new \InvalidArgumentException('This exact decimal type is not enabled in the package configuration.');
+        }
+
         // If it's in the allowed list, use it
         if (in_array($type, $allowed, true)) {
             return $type;
@@ -329,6 +349,10 @@ class Tag extends Model
 
         // If it's a custom domain synonym
         if (array_key_exists($type, $map)) {
+            if (static::decimalScale($map[$type]) !== null && ! in_array($map[$type], $allowed, true)) {
+                throw new \InvalidArgumentException('The mapped exact decimal type is not enabled in the package configuration.');
+            }
+
             return $map[$type];
         }
 
@@ -343,6 +367,9 @@ class Tag extends Model
     {
         if ($value === null) {
             return null;
+        }
+        if (($scale = static::decimalScale($type)) !== null) {
+            return ExactDecimal::normalize($value, $scale);
         }
         switch ($type) {
             case 'integer':
@@ -374,17 +401,46 @@ class Tag extends Model
     protected function getCastType($key)
     {
         if ($key === 'value' && ! empty($this->type)) {
-            $allowed = config('nestedterms.allowed_cast_types', []);
-            $map = config('nestedterms.custom_type_map', []);
+            $type = static::validateOrFallbackType($this->type);
 
-            if (in_array($this->type, $allowed, true)) {
-                return $this->type;
-            }
-
-            return $map[$this->type] ?? 'string';
+            return static::decimalScale($type) !== null ? 'string' : $type;
         }
 
         return parent::getCastType($key);
+    }
+
+    /** Exact decimals are strings; never invoke Laravel's rounding decimal cast. */
+    protected function castAttribute($key, $value)
+    {
+        if ($key === 'value' && ($scale = static::decimalScale(static::validateOrFallbackType($this->type))) !== null) {
+            return $value === null ? null : ExactDecimal::normalize($value, $scale);
+        }
+
+        return parent::castAttribute($key, $value);
+    }
+
+    /** Comparing an old decimal at a new scale can round or reject a valid replacement. */
+    public function originalIsEquivalent($key)
+    {
+        if ($key === 'value' && (static::decimalScale(static::validateOrFallbackType($this->attributes['type'] ?? null)) !== null
+            || static::decimalScale(static::validateOrFallbackType($this->original['type'] ?? null)) !== null)) {
+            return array_key_exists($key, $this->original)
+                && ($this->attributes[$key] ?? null) === $this->original[$key];
+        }
+
+        return parent::originalIsEquivalent($key);
+    }
+
+    private static function decimalScale(?string $type): ?int
+    {
+        if ($type === null || ! str_starts_with(strtolower(ltrim($type)), 'decimal')) {
+            return null;
+        }
+        if (! preg_match('/\Adecimal:([0-6])\z/', $type, $matches)) {
+            throw new \InvalidArgumentException('Use an exact decimal type from decimal:0 through decimal:6.');
+        }
+
+        return (int) $matches[1];
     }
 
     /* -----------------------------------------------------------------

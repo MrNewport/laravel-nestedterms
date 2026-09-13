@@ -52,6 +52,19 @@ it('resolves configured scoped models IDs and slugs together and supports explic
     expect(DB::table('catalog_links')->count())->toBe(0);
 });
 
+it('round trips exact decimal strings through scoped custom models and tables', function () {
+    $decimal = ScopedTag::create(['term_id' => $this->term->id, 'name' => 'Measured', 'type' => 'decimal:2', 'value' => '999999999999999999.25']);
+    $this->item->attachTags($decimal);
+    expect($this->item->tags()->findOrFail($decimal->id))->toBeInstanceOf(ScopedTag::class)
+        ->and($decimal->fresh()->value)->toBe('999999999999999999.25');
+    $decimal->update(['value' => '0.000']);
+    expect(DB::table('catalog_tags')->where('id', $decimal->id)->value('value'))->toBe('0.00');
+    $decimal->update(['value' => null]);
+    expect($decimal->fresh()->value)->toBeNull();
+    config(['testing.tenant_id' => 2]);
+    expect(ScopedTag::find($decimal->id))->toBeNull();
+});
+
 it('rejects foreign or unavailable inputs atomically for every mutation', function ($kind, $method) {
     $input = match ($kind) {
         'id' => $this->foreign->id,
