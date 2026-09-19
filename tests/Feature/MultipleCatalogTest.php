@@ -127,7 +127,7 @@ it('resolves IDs and slugs through the subject catalog and retains false zero an
     $this->alternateTag->update(['value' => null]);
     expect($this->alternate->tags()->findOrFail($this->alternateTag->id)->value)->toBeNull();
     $this->alternate->detachTags([$zero->id, $false->slug]);
-    expect($this->alternate->tags()->modelKeys())->toBe([$this->alternateTag->id]);
+    expect($this->alternate->tags()->get()->modelKeys())->toBe([$this->alternateTag->id]);
 });
 
 it('re-resolves current tenant scope for both catalogs without changing their configuration', function () {

@@ -210,7 +210,7 @@ it('round trips exact decimals and typed null zero false through both native MyS
             expect(fn () => $decimal->update(['value' => '1.51']))->toThrow(InvalidArgumentException::class);
             expect($decimal->fresh()->value)->toBe('1.5');
             $asset->detachTags([$zero->id, $false->slug]);
-            expect($asset->tags()->modelKeys())->toBe([$decimal->id]);
+            expect($asset->tags()->get()->modelKeys())->toBe([$decimal->id]);
         }
     });
 });
@@ -252,8 +252,8 @@ it('rolls back native MySQL pivot and final commit failures without affecting th
             ->and($connection->transactionLevel())->toBe(0)
             ->and($connection->getPdo()->inTransaction())->toBeFalse();
         $alternate->syncTags($other);
-        expect($alternate->tags()->modelKeys())->toBe([$other->id])
-            ->and($primary->tags()->modelKeys())->toBe([$primaryTag->id]);
+        expect($alternate->tags()->get()->modelKeys())->toBe([$other->id])
+            ->and($primary->tags()->get()->modelKeys())->toBe([$primaryTag->id]);
     });
 });
 
