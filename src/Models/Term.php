@@ -73,7 +73,18 @@ class Term extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('nestedterms.terms_table', 'terms');
+        $this->table = $this->resolveTermsTable();
+    }
+
+    protected function resolveTermsTable(): string
+    {
+        return config('nestedterms.terms_table', 'terms');
+    }
+
+    /** @return class-string<Tag> */
+    protected function resolveTagModel(): string
+    {
+        return config('nestedterms.tag_model', Tag::class);
     }
 
     /**
@@ -101,9 +112,12 @@ class Term extends Model
      */
     public function tags(): HasMany
     {
-        // If using a custom Tag model, the Tag itself references the config for belongsTo.
-        // By default, we reference the base Tag class below, but you can override if needed.
-        return $this->hasMany(config('nestedterms.tag_model', Tag::class), 'term_id');
+        $tagClass = $this->resolveTagModel();
+        if (! is_a($tagClass, Tag::class, true) || (new \ReflectionClass($tagClass))->isAbstract()) {
+            throw new \InvalidArgumentException('The related tag model must be a concrete Tag subclass.');
+        }
+
+        return $this->hasMany($tagClass, 'term_id');
     }
 
     /**

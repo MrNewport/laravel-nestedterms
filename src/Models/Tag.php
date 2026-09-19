@@ -85,7 +85,24 @@ class Tag extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('nestedterms.tags_table', 'tags');
+        $this->table = $this->resolveTagsTable();
+    }
+
+    protected function resolveTagsTable(): string
+    {
+        return config('nestedterms.tags_table', 'tags');
+    }
+
+    /** @return class-string<Term> */
+    protected function resolveTermModel(): string
+    {
+        return config('nestedterms.term_model', Term::class);
+    }
+
+    /** @param class-string<Model> $modelClass */
+    protected function resolveModelTagTable(string $modelClass): string
+    {
+        return config('nestedterms.model_tag_table', 'model_tag');
     }
 
     /**
@@ -192,7 +209,10 @@ class Tag extends Model
      */
     public function term(): BelongsTo
     {
-        $termClass = config('nestedterms.term_model', Term::class);
+        $termClass = $this->resolveTermModel();
+        if (! is_a($termClass, Term::class, true) || (new \ReflectionClass($termClass))->isAbstract()) {
+            throw new \InvalidArgumentException('The related term model must be a concrete Term subclass.');
+        }
 
         return $this->belongsTo($termClass, 'term_id');
     }
@@ -228,7 +248,7 @@ class Tag extends Model
             throw new \InvalidArgumentException('The inverse relationship requires a concrete Eloquent model class.');
         }
 
-        return $this->morphedByMany($modelClass, 'model', config('nestedterms.model_tag_table', 'model_tag'), 'tag_id', 'model_id')->withTimestamps();
+        return $this->morphedByMany($modelClass, 'model', $this->resolveModelTagTable($modelClass), 'tag_id', 'model_id')->withTimestamps();
     }
 
     /* -----------------------------------------------------------------

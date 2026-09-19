@@ -81,9 +81,10 @@ jobs:
           extensions: pdo_mysql, pdo_sqlite, dom, mbstring
           coverage: none
       - run: composer update --no-interaction --prefer-dist --no-progress
-      - run: vendor/bin/pest tests/Feature/MySqlMigrationTest.php tests/Feature/MySqlHardeningTest.php
+      - run: vendor/bin/pest tests/Feature/MySqlMigrationTest.php tests/Feature/MySqlHardeningTest.php tests/Feature/MySqlMultipleCatalogTest.php
         env:
           MYSQL_TEST_DATABASE: package_test
           MYSQL_HARDENING_DATABASE: nestedterms_hardening_ci_test
+          MYSQL_MULTIPLE_CATALOG_DATABASE: nestedterms_multicat_ci_test
           MYSQL_TEST_PORT: '3306'
           MYSQL_TEST_PASSWORD: package-test-only

@@ -21,15 +21,29 @@ trait HasTags
      */
     public function tags(): MorphToMany
     {
-        $tagClass = config('nestedterms.tag_model', Tag::class);
+        $tagClass = $this->resolveTagModel();
+        if (! is_a($tagClass, Tag::class, true) || (new \ReflectionClass($tagClass))->isAbstract()) {
+            throw new InvalidArgumentException('The related tag model must be a concrete Tag subclass.');
+        }
 
         return $this->morphToMany(
             $tagClass,
             'model',
-            config('nestedterms.model_tag_table', 'model_tag'),
+            $this->resolveModelTagTable(),
             'model_id',
             'tag_id'
         )->withTimestamps();
+    }
+
+    /** @return class-string<Tag> */
+    protected function resolveTagModel(): string
+    {
+        return config('nestedterms.tag_model', Tag::class);
+    }
+
+    protected function resolveModelTagTable(): string
+    {
+        return config('nestedterms.model_tag_table', 'model_tag');
     }
 
     /**
@@ -76,7 +90,15 @@ trait HasTags
     public function hasTag(mixed $tag): bool
     {
         if ($tag instanceof Tag) {
-            return $this->tags()->where($this->tags()->getRelated()->qualifyColumn('id'), $tag->id)->exists();
+            $relation = $this->tags();
+            $related = $relation->getRelated();
+            $relatedClass = $related::class;
+            if (! $tag instanceof $relatedClass || ! $tag->exists || $tag->getTable() !== $related->getTable()
+                || $tag->getConnection()->getName() !== $related->getConnection()->getName()) {
+                return false;
+            }
+
+            return $relation->where($related->qualifyColumn('id'), $tag->id)->exists();
         }
 
         if (is_int($tag)) {
