@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add protected per-model table, related-model and pivot hooks so multiple scoped catalogs can coexist without shared configuration changes. Keep existing configuration defaults and validate related model classes. Model-based `hasTag()` checks now reject foreign catalog/table/connection identities even when numeric IDs overlap.
 - Add reusable `ExactDecimal::normalize()` and opt-in configured `decimal:0` through `decimal:6` Tag types. Exact decimals retain their declared type and round-trip as canonical strings, with bounded input/precision, no float coercion or rounding, null preservation, and exact rescaling/type changes.
 - Allow applications to disable package migration loading and supply their own constrained schema.
 - Resolve all attachment inputs through the configured scoped Tag model, rejecting unavailable or ambiguous inputs before any pivot changes. Attachment helpers now use a single database transaction and explicit input limits; only an explicit empty list clears every attachment.

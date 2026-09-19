@@ -43,6 +43,7 @@ A **dynamic & extensible** system for **nested** Terms and **dynamic-cast** Tags
 - [Customization](#customization)
   - [Custom Table Names](#custom-table-names)
   - [Custom Models](#custom-models)
+  - [Multiple Catalogs](#multiple-catalogs)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
@@ -319,6 +320,22 @@ Then update:
 'tag_model' => \App\Models\CustomTag::class,
 ```
 
+### Multiple Catalogs
+
+An application can keep separate catalogs in the same process by overriding the protected model hooks below. Defaults still use the existing configuration. Each catalog supplies its own scoped models and application-owned tables; configure both directions of its relationships together.
+
+| Model | Hooks |
+| --- | --- |
+| `Term` subclass | `resolveTermsTable(): string`, `resolveTagModel(): string` |
+| `Tag` subclass | `resolveTagsTable(): string`, `resolveTermModel(): string`, `resolveModelTagTable(string $modelClass): string` |
+| Model using `HasTags` | `resolveTagModel(): string`, `resolveModelTagTable(): string` |
+
+For example, an asset catalog can select `asset_terms`, `asset_tags` and `asset_tag_links` through these hooks while the original catalog continues using its configured tables. Its custom Term returns the asset Tag class; its custom Tag returns the asset Term class; the asset model returns the asset Tag class and pivot. Override the Tag's inverse-pivot hook to reject unsupported subject classes when the catalog has a fixed subject boundary.
+
+Related classes must be concrete subclasses of the package Term or Tag. Table and class choices belong in trusted model code. Do not choose them from request data or switch shared catalog configuration during a request or queue job. The hooks do not create tables, apply tenant constraints or authorize subjects; those remain application responsibilities. Parent/child traversal stays on the concrete Tag model, and attachment operations retain their scoped lookup and same-connection transaction checks.
+
+`hasTag($tagModel)` returns false when a model belongs to another catalog, table or connection, even when its numeric ID matches an attached tag. Mutation helpers reject that model before changing either catalog. IDs and slugs resolve only through the receiving model's declared catalog.
+
 ---
 
 ## Testing
@@ -333,6 +350,7 @@ composer test
 - **TagTest / HierarchyHardeningTest**: bounded deep nesting, dynamic casting, null updates, cycles, slug identity, and length limits.
 - **HasTagsTraitTest**: attaching/detaching tags on a test model.
 - **ScopedAttachmentTest**: custom tables/models/scopes, atomic failures, and concrete inverse relations.
+- **MultipleCatalogTest**: simultaneous scoped catalogs with overlapping identities, per-model relations, current membership checks and isolated rollback. `MySqlMultipleCatalogTest` covers the same boundary on native MySQL when `MYSQL_MULTIPLE_CATALOG_DATABASE` names a fresh `nestedterms_multicat_<run>_test` schema; it refuses existing schemas and drops only the schema it created.
 - **MigrationOptOutTest**: package schema is not registered or applied when disabled.
 
 The MySQL hardening test is opt-in locally:
