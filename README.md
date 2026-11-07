@@ -2,6 +2,8 @@
 
 Editable taxonomy Terms, hierarchical typed Tags and polymorphic Eloquent membership. Model casts and parent checks are reusable; authorization, domain validation and concurrent tree editing stay in the host.
 
+**[Interactive workshop](https://matthewnewport.com/packages/laravel-nestedterms/lab)** — Try guided examples in your browser.
+
 ```sh
 composer require mrnewport/laravel-nestedterms:^2.0
 ```
